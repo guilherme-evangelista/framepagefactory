@@ -2,7 +2,7 @@ package br.com.guilhermeevangelista.selenium.core.driver;
 
 import br.com.guilhermeevangelista.selenium.core.driver.enums.Web;
 import br.com.guilhermeevangelista.selenium.core.utils.PropertiesManager;
-import br.com.guilhermeevangelista.selenium.core.utils.variaveis.VariaveisEstaticasSalesForce;
+import br.com.guilhermeevangelista.selenium.core.utils.variaveis.VariaveisEstaticas;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
@@ -53,7 +53,7 @@ public class DriverFactory {
         }
         wait = new WebDriverWait(driver, 10);
         PropertiesManager propertiesManager = new PropertiesManager("config");
-        driver.get(propertiesManager.getProp("url" + VariaveisEstaticasSalesForce.ambiente));
+        driver.get(propertiesManager.getProp("url" + VariaveisEstaticas.ambiente));
         return driver;
     }
 

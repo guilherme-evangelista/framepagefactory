@@ -46,6 +46,17 @@ public class DateGetUtils {
         return (long) (random.nextFloat() * (31557600000L * anosMaximos));
     }
 
+    public static String gerarDataNascimento(DateFormatUtils pattern, int idadeMaxima, int idadeMinima){
+        TimeZone tz = TimeZone.getTimeZone(ZoneId.systemDefault());
+        DateFormat df = new SimpleDateFormat(pattern.toString());
+        df.setTimeZone(tz);
+        return df.format(new Date(System.currentTimeMillis() - quantidadeAnosEmMS(idadeMinima) - configurarTempoAleatorio(idadeMaxima-idadeMinima)));
+    }
+
+    private static long quantidadeAnosEmMS(int anos){
+        return anos * 31536000000L;
+    }
+
     @Test
     public void testarHora(){
         DateFormatUtils[] enums = new DateFormatUtils[]{

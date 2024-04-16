@@ -8,8 +8,14 @@ import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.awt.*;
+import java.awt.datatransfer.StringSelection;
+import java.awt.event.KeyEvent;
+import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 
 import static br.com.guilhermeevangelista.selenium.core.driver.DriverFactory.getDriver;
 import static br.com.guilhermeevangelista.selenium.core.driver.DriverFactory.getDriverWait;
@@ -22,7 +28,7 @@ import static br.com.guilhermeevangelista.selenium.core.driver.DriverFactory.get
  */
 public class BasePage {
 
-    public BasePage(){
+    public BasePage() {
         PageFactory.initElements(getDriver(), this);
     }
 
@@ -32,19 +38,20 @@ public class BasePage {
      * Metodo para realizar um input de texto em um elemento
      *
      * @param elemento campo mapeado
-     * @param texto texto da a ser digitado
+     * @param texto    texto da a ser digitado
      */
     protected void digitarTexto(WebElement elemento, String texto) {
         try {
             waitProcessPage();
-            esperarElementoFicarVisivel(elemento);
-            elemento.sendKeys(texto);
+            getDriverWait()
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(ExpectedConditions.visibilityOf(elemento))
+                    .sendKeys(texto);
         } catch (WebDriverException e) {
-            JavascriptExecutor js = (JavascriptExecutor) getDriver();
-            js.executeScript("arguments[0].value='"+texto+"';", elemento);
+            ((JavascriptExecutor) getDriver()).executeScript("arguments[0].value='" + texto + "';", elemento);
         } catch (Exception e) {
             ScenarioRepository.screenShot();
-            log.error("Falha ao digitar no elemento :" + elemento);
+            log.error("Falha ao digitar no elemento: " + elemento, e);
         }
     }
 
@@ -59,18 +66,35 @@ public class BasePage {
     protected void clicarElemento(WebElement elemento) {
         try {
             waitProcessPage();
-            esperarElementoFicarClicavel(elemento);
-            elemento.click();
+            getDriverWait()
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(ExpectedConditions.elementToBeClickable(elemento))
+                    .click();
         } catch (ElementNotInteractableException e) {
-            Actions actions = new Actions(getDriver());
-            actions.moveToElement(elemento).click().build().perform();
+            new Actions(getDriver())
+                    .moveToElement(elemento)
+                    .click()
+                    .perform();
         } catch (WebDriverException e) {
-            JavascriptExecutor js = (JavascriptExecutor) getDriver();
-            js.executeScript("arguments[0].click();", elemento);
+            ((JavascriptExecutor) getDriver()).executeScript("arguments[0].click();", elemento);
         } catch (Exception e) {
             ScenarioRepository.screenShot();
-            log.error("Falha ao clicar no elemento :" + elemento);
+            log.error("Falha ao clicar no elemento: " + elemento, e);
         }
+    }
+
+    protected void clicarElemento(By by){
+        this.clicarElemento(
+                getDriver().findElements(by).get(0)
+        );
+    }
+
+    protected void clicarNoElementoPorAtributo(List<WebElement> elements, String attribute, String value) {
+        waitProcessPage();
+        elements.stream()
+                .filter(element -> element.getAttribute(attribute) != null && element.getAttribute(attribute).equals(value))
+                .findFirst()
+                .ifPresent(this::clicarElemento);
     }
 
     /**
@@ -80,16 +104,19 @@ public class BasePage {
      * @return texto contido no elemento html
      */
     protected String recuperarTexto(WebElement elemento) {
-        String valor = null;
         try {
             waitProcessPage();
-            esperarElementoFicarVisivel(elemento);
-            valor = elemento.getText();
+            return getDriverWait()
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(ExpectedConditions.visibilityOf(elemento))
+                    .getText();
+        } catch (WebDriverException e) {
+            return (String) ((JavascriptExecutor) getDriver()).executeScript("return arguments[0].textContent;", elemento);
         } catch (Exception e) {
             ScenarioRepository.screenShot();
-            log.error("Falha ao clicar no elemento :" + elemento);
+            log.error("Falha ao recuperar o texto do elemento: " + elemento, e);
+            return null;
         }
-        return valor;
     }
 
     /**
@@ -97,7 +124,7 @@ public class BasePage {
      *
      * @param elemento elemento mapeado nas pages
      */
-    protected void tentarClicarBotaoLoop(WebElement elemento){
+    protected void tentarClicarBotaoLoop(WebElement elemento) {
         int tentativas = 0;
         do {
             try {
@@ -105,7 +132,8 @@ public class BasePage {
                 esperarElementoFicarClicavel(elemento);
                 clicarElemento(elemento);
                 return;
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
             tentativas++;
         } while (tentativas < 10);
     }
@@ -114,9 +142,9 @@ public class BasePage {
      * Metodo para selecionar uma opção de um Selec List
      *
      * @param elemento selectList mapeado nas pages
-     * @param texto texto da opção desejada
+     * @param texto    texto da opção desejada
      */
-    protected void selecionarItemLista(WebElement elemento, String texto){
+    protected void selecionarItemLista(WebElement elemento, String texto) {
         Select lista = new Select(elemento);
         lista.selectByVisibleText(texto);
     }
@@ -125,9 +153,9 @@ public class BasePage {
      * Metodo para selecionar uma opção de um Selec List
      *
      * @param elemento selectList mapeado nas pages
-     * @param index posição do elemento
+     * @param index    posição do elemento
      */
-    protected void selecionarItemLista(WebElement elemento, int index){
+    protected void selecionarItemLista(WebElement elemento, int index) {
         Select lista = new Select(elemento);
         lista.selectByIndex(index);
     }
@@ -143,39 +171,22 @@ public class BasePage {
     }
 
     /**
-     * Tirar um print da pagina para adicionar ao relatório
-     */
-    public void tirarPrint(){
-        waitProcessPage();
-        ScenarioRepository.screenShot();
-    }
-
-    /**
-     * Tirar um print da pagina para adicionar ao relatório
-     * @param elementos Elemento(s) para realizar um highlight no print
-     */
-    public void tirarPrint(WebElement... elementos){
-        waitProcessPage();
-        esperarElementoFicarVisivel(elementos);
-        ScenarioRepository.screenShot(elementos);
-    }
-
-    /**
      * Percorre lista de elementos e clica no que possui o texto desejado
+     *
      * @param listaDeElementos lista de Elementos
-     * @param texto texto a ser clicado entre os elementos da lista
+     * @param texto            texto a ser clicado entre os elementos da lista
      */
-    protected void correrListaEClicarElemento(List<WebElement> listaDeElementos, String texto) {
-        for (WebElement webElement : listaDeElementos) {
-            if (recuperarTexto(webElement).equalsIgnoreCase(texto)) {
-                clicarElemento(webElement);
-                break;
-            }
-        }
+    protected void clicarElementoPorTexto(List<WebElement> listaDeElementos, String texto) {
+        Optional<WebElement> elemento = listaDeElementos.stream()
+                .filter(element -> element.getText().contains(texto))
+                .findFirst();
+
+        elemento.ifPresent(this::clicarElemento);
     }
 
     /**
      * Valida a existencia do elemento na tela
+     *
      * @param elemento elemento mapeado
      * @return valor booleano recorrente da existencia do elemento
      */
@@ -186,7 +197,6 @@ public class BasePage {
             esperarElementoFicarClicavel(elemento);
             valor = elemento.isDisplayed();
         } catch (Exception e) {
-            ScenarioRepository.screenShot();
             log.error("Falha ao tentar encontrar o elemento: " + elemento);
         }
         return valor;
@@ -194,6 +204,7 @@ public class BasePage {
 
     /**
      * Valida a existencia do elemento na tela por texto
+     *
      * @param texto texto dentro do elemento
      * @return valor booleano recorrente da existencia do elemento
      */
@@ -201,26 +212,27 @@ public class BasePage {
         boolean valor = false;
         try {
             waitProcessPage();
-            esperarElementoFicarClicavel(getDriver().findElement(By.xpath("//*[.='"+texto+"']")));
-            valor = getDriver().findElement(By.xpath("//*[.='"+texto+"']")).isDisplayed();
+            esperarElementoFicarClicavel(getDriver().findElement(By.xpath("//*[.='" + texto + "']")));
+            valor = getDriver().findElement(By.xpath("//*[.='" + texto + "']")).isDisplayed();
         } catch (Exception e) {
             ScenarioRepository.screenShot();
-            log.error("Falha ao tentar encontrar o elemento: " + getDriver().findElement(By.xpath("//*[.='"+texto+"']")));
+            log.error("Falha ao tentar encontrar o elemento: " + getDriver().findElement(By.xpath("//*[.='" + texto + "']")));
         }
         return valor;
     }
 
     /**
      * Realizar scroll ate o elemento
+     *
      * @param elemento elemento a ser focalizado
      */
-    public void scrollAteOElemento(WebElement elemento){
+    public void scrollAteOElemento(WebElement elemento) {
         try {
             esperarElementoFicarVisivel(elemento);
             waitProcessPage();
             JavascriptExecutor js = (JavascriptExecutor) getDriver();
             js.executeScript("arguments[0].scrollIntoView();", elemento);
-        }catch (Exception e){
+        } catch (Exception e) {
             ScenarioRepository.screenShot();
             log.error("Falha ao tentar encontrar o elemento: " + elemento);
         }
@@ -230,7 +242,7 @@ public class BasePage {
     /**
      * Realizar scroll ate o fim da pagina
      */
-    public void scrollAteOFimDaPagina(){
+    public void scrollAteOFimDaPagina() {
         waitProcessPage();
         JavascriptExecutor js = (JavascriptExecutor) getDriver();
         js.executeScript("window.scrollTo(0, document.body.scrollHeight)");
@@ -239,16 +251,75 @@ public class BasePage {
     /**
      * Realizar scroll ate o topo da pagina
      */
-    public void scrollAteOTopoDaPagina(){
+    public void scrollAteOTopoDaPagina() {
         waitProcessPage();
         JavascriptExecutor js = (JavascriptExecutor) getDriver();
         js.executeScript("window.scrollTo(0, document.body.scrollTop)");
     }
 
+
+    protected void uploadArquivo(WebElement elemento, String absolutPath) {
+        clicarElemento(elemento);
+
+        Robot robot;
+        try {
+            robot = new Robot();
+            // Coloque o caminho do arquivo na área de transferência
+            StringSelection filePath = new StringSelection(absolutPath);
+            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(filePath, null);
+
+            // Use o Robot para colar o caminho do arquivo no diálogo de upload de arquivo e pressionar Enter
+            robot.delay(1000);
+            robot.keyPress(KeyEvent.VK_CONTROL);
+            robot.keyPress(KeyEvent.VK_V);
+            robot.keyRelease(KeyEvent.VK_V);
+            robot.keyRelease(KeyEvent.VK_CONTROL);
+            robot.keyPress(KeyEvent.VK_ENTER);
+            robot.delay(1000);
+            robot.keyRelease(KeyEvent.VK_ENTER);
+
+        } catch (AWTException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    protected void recarregarTela() {
+        waitProcessPage();
+        getDriver().get(getDriver().getCurrentUrl());
+        waitProcessPage();
+
+        new BasePage();
+    }
+
+    /**
+     * Tirar um print da pagina para adicionar ao relatório
+     */
+    public void tirarPrint() {
+        waitProcessPage();
+        ScenarioRepository.screenShot();
+    }
+
+    /**
+     * Tirar um print da pagina para adicionar ao relatório
+     *
+     * @param elementos Elemento(s) para realizar um highlight no print
+     */
+    public void tirarPrint(WebElement... elementos) {
+        waitProcessPage();
+        esperarElementoFicarVisivel(elementos);
+        ScenarioRepository.screenShot(elementos);
+    }
+
+    protected void log(String log) {
+        waitProcessPage();
+        System.out.println(log);
+        ScenarioRepository.addText(log);
+    }
+
     /**
      * Wait com execucao de codigo JS para aguargar o carregamento dos elementos
      */
-    private void waitProcessPage(){
+    private void waitProcessPage() {
         getDriverWait().until(waitProcess());
     }
 
@@ -257,24 +328,13 @@ public class BasePage {
      */
     private ExpectedCondition<Boolean> waitProcess() {
         return driver -> {
-            try {
-                String js = "var reqAjax = typeof window.Ajax !== 'undefined' ?window.Ajax.activeRequestCount : 0;\n" +
-                        "var reqAngular = typeof angular !== 'undefined' ? angular.by(document.body).injector().get('$http').pendingRequests.length : 0;\n" +
-                        "var reqJquery = typeof jQuery !== 'undefined' ? jQuery.active : 0;\n" +
-                        "var reqDom = document.readyState;\n" +
-                        "\n" +
-                        "if (reqAjax === 0 && reqAngular === 0 & reqJquery === 0 && reqDom === 'complete') {\n" +
-                        " return 'complete';\n" +
-                        "}\n" +
-                        "else {\n" +
-                        " return 'process';\n" +
-                        "}";
+            String js = "var reqAjax = typeof window.Ajax !== 'undefined' ? window.Ajax.activeRequestCount : 0;\n"
+                    + "var reqAngular = typeof angular !== 'undefined' ? angular.by(document.body).injector().get('$http').pendingRequests.length : 0;\n"
+                    + "var reqJquery = typeof jQuery !== 'undefined' ? jQuery.active : 0;\n"
+                    + "var reqDom = document.readyState;\n" + "\n"
+                    + "return (reqAjax + reqAngular + reqJquery === 0 && reqDom === 'complete');";
 
-                assert driver != null;
-                return ((JavascriptExecutor) driver).executeScript(js).toString().equals("complete");
-            } catch (Exception e) {
-                return true;
-            }
+            return ((JavascriptExecutor) getDriver()).executeScript(js).equals(true);
         };
     }
 
@@ -288,7 +348,7 @@ public class BasePage {
     /**
      * Esperar elemento ficar visivel
      */
-    private void esperarElementoFicarVisivel(WebElement ... webElement) {
+    private void esperarElementoFicarVisivel(WebElement... webElement) {
         getDriverWait().until(ExpectedConditions.visibilityOfAllElements(webElement));
     }
 }

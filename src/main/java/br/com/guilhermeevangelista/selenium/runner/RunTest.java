@@ -3,7 +3,7 @@ package br.com.guilhermeevangelista.selenium.runner;
 import br.com.guilhermeevangelista.selenium.core.utils.report.Report;
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
-import org.junit.AfterClass;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 
 /**
@@ -21,8 +21,11 @@ import org.junit.runner.RunWith;
         tags = {"@loginsucesso"}
 )
 public class RunTest {
-    @AfterClass
-    public static void gerarRelatorio() {
+}
+
+class RunTestReport{
+    @Test
+    public void gerarRelatorio() {
         Report.gerarRelarotioClueCumber();
     }
 }

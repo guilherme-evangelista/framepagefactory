@@ -87,7 +87,8 @@
                 <configuration>
                     <customCss>src/main/java/br/com/guilhermeevangelista/selenium/core/utils/report/custom.css</customCss>
                     <customPageTitle>Frame RestAssured</customPageTitle>
-                    <sourceJsonReportDirectory>${project.build.directory}/cucumber-parallel</sourceJsonReportDirectory>
+                    <sourceJsonReportDirectory>${project.build.directory}/cucumber-report</sourceJsonReportDirectory>
+<!--                    <sourceJsonReportDirectory>${project.build.directory}/cucumber-parallel</sourceJsonReportDirectory>-->
                     <generatedHtmlReportDirectory>${project.build.directory}/generated-report</generatedHtmlReportDirectory>
                     <customParameters>
                         <FrameWork>FrameWork Rede 2021</FrameWork>
@@ -176,7 +177,12 @@
             <artifactId>cucumber-junit</artifactId>
             <version>${cucumber.version}</version>
         </dependency>
-
+        <!-- https://mvnrepository.com/artifact/io.github.bonigarcia/webdrivermanager -->
+        <dependency>
+            <groupId>io.github.bonigarcia</groupId>
+            <artifactId>webdrivermanager</artifactId>
+            <version>5.3.2</version>
+        </dependency>
     </dependencies>
 
 

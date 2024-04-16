@@ -12,7 +12,7 @@ public class HomePage extends BasePage {
     private WebElement cmpPesquisar;
 
     public boolean validarTelaHomeAtiva(){
-        super.tirarPrint(cmpPesquisar);
+        super.tirarPrint();
         return super.verificaElementoPresenteTela(cmpPesquisar);
     }
 }

@@ -2,7 +2,7 @@ package br.com.guilhermeevangelista.selenium.test.pages;
 
 import br.com.guilhermeevangelista.selenium.core.driver.BasePage;
 import br.com.guilhermeevangelista.selenium.core.utils.PropertiesManager;
-import br.com.guilhermeevangelista.selenium.core.utils.variaveis.VariaveisEstaticasSalesForce;
+import br.com.guilhermeevangelista.selenium.core.utils.variaveis.VariaveisEstaticas;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 
@@ -20,11 +20,11 @@ public class LoginSFPage extends BasePage {
     private WebElement btnEntrar;
 
     public void preencherEmail(String user){
-        super.digitarTexto(cmpEmail, propertiesManagerUsers.getProp(user.toUpperCase()+"_"+ VariaveisEstaticasSalesForce.ambiente +"_USER"));
+        super.digitarTexto(cmpEmail, propertiesManagerUsers.getProp(user.toUpperCase()+"_"+ VariaveisEstaticas.ambiente +"_USER"));
     }
 
     public void preencherSenha(String user){
-        super.digitarTexto(cmpSenha, propertiesManagerUsers.getProp(user.toUpperCase()+"_"+ VariaveisEstaticasSalesForce.ambiente +"_PASS"));
+        super.digitarTexto(cmpSenha, propertiesManagerUsers.getProp(user.toUpperCase()+"_"+ VariaveisEstaticas.ambiente +"_PASS"));
     }
 
     public void clicarBotaoEntrar(){
